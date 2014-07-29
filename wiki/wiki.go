@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"html/template"
 	"regexp"
-	"errors"
+	"fmt"
 )
 
 type Page struct {
@@ -27,15 +27,6 @@ func (page *Page) save() error {
 
 var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
-func getTitle(writer http.ResponseWriter, request *http.Request) (string, error) {
-	m := validPath.FindStringSubmatch(request.URL.Path)
-	if m == nil {
-		http.NotFound(writer, request)
-		return "", errors.New("Invalid Page Title")
-	}
-	return m[2], nil // The title is the second regex group.
-}
-
 func loadPage(title string) (*Page, error) {
 	filename := title + ".txt"
 	body, err := ioutil.ReadFile(filename)
@@ -48,8 +39,11 @@ func loadPage(title string) (*Page, error) {
 var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
 
 func renderTemplate(writer http.ResponseWriter, tmpl string, page *Page) {
-	err := templates.ExecuteTemplate(writer, tmpl + ".html", page)
+	tmpl = "tmpl/" + tmpl + ".html"
+	fmt.Println("Page title::" + page.Title)
+	err := templates.ExecuteTemplate(writer, tmpl, page)
 	if err != nil {
+		fmt.Println("Couldn't render template: " + tmpl + ". " + err.Error())
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -57,18 +51,20 @@ func renderTemplate(writer http.ResponseWriter, tmpl string, page *Page) {
 func viewHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
 	if err != nil {
+		fmt.Println("Page not found, redirecting")
 		http.Redirect(writer, request, "/edit/" + title, http.StatusFound)
 		return
 	}
-	renderTemplate(writer, "tmpl/view", page)
+	renderTemplate(writer, "view", page)
 }
 
 func editHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
 	if err != nil {
+		fmt.Println("Page not found, creating new page:" + title)
 		page = &Page{Title: title}
 	}
-	renderTemplate(writer, "tmpl/edit", page)
+	renderTemplate(writer, "edit", page)
 }
 
 func saveHandler(writer http.ResponseWriter, request *http.Request, title string) {
