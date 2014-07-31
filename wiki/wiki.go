@@ -2,13 +2,17 @@ package main
 
 import (
 	"flag"
+	"html/template"
+	"io/ioutil"
 	"log"
 	"net"
-	"io/ioutil"
 	"net/http"
-	"html/template"
 	"regexp"
 	"fmt"
+)
+
+var (
+	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
 )
 
 type Page struct {
@@ -16,16 +20,10 @@ type Page struct {
 	Body  []byte
 }
 
-var (
-	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
-)
-
 func (page *Page) save() error {
 	filename := page.Title + ".txt"
 	return ioutil.WriteFile(filename, page.Body, 0600)
 }
-
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
 func loadPage(title string) (*Page, error) {
 	filename := title + ".txt"
@@ -36,20 +34,9 @@ func loadPage(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
-var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
-
-func renderTemplate(writer http.ResponseWriter, tmpl string, page *Page) {
-	tmpl = "tmpl/" + tmpl + ".html"
-	fmt.Println("Page title::" + page.Title)
-	err := templates.ExecuteTemplate(writer, tmpl, page)
-	if err != nil {
-		fmt.Println("Couldn't render template: " + tmpl + ". " + err.Error())
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-	}
-}
-
 func viewHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
+	fmt.Println("Page: " + page.Title);
 	if err != nil {
 		fmt.Println("Page not found, redirecting")
 		http.Redirect(writer, request, "/edit/" + title, http.StatusFound)
@@ -78,10 +65,25 @@ func saveHandler(writer http.ResponseWriter, request *http.Request, title string
 	http.Redirect(writer, request, "/view/" + title, http.StatusFound)
 }
 
+var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
+
+func renderTemplate(writer http.ResponseWriter, tmpl string, page *Page) {
+	tmpl = "tmpl/" + tmpl + ".html"
+	fmt.Println("Page title::" + page.Title)
+	err := templates.ExecuteTemplate(writer, tmpl, page)
+	if err != nil {
+		fmt.Println("Couldn't render template: " + tmpl + ". " + err.Error())
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
+
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		match := validPath.FindStringSubmatch(request.URL.Path)
 		if match == nil {
+			fmt.Println("Not valid path");
 			http.NotFound(writer, request)
 			return
 		}
