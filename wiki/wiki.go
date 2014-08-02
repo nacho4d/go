@@ -8,7 +8,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
-	"fmt"
+//	"fmt"
 )
 
 var (
@@ -36,9 +36,7 @@ func loadPage(title string) (*Page, error) {
 
 func viewHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
-	fmt.Println("Page: " + page.Title);
 	if err != nil {
-		fmt.Println("Page not found, redirecting")
 		http.Redirect(writer, request, "/edit/" + title, http.StatusFound)
 		return
 	}
@@ -48,7 +46,6 @@ func viewHandler(writer http.ResponseWriter, request *http.Request, title string
 func editHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
 	if err != nil {
-		fmt.Println("Page not found, creating new page:" + title)
 		page = &Page{Title: title}
 	}
 	renderTemplate(writer, "edit", page)
@@ -68,11 +65,9 @@ func saveHandler(writer http.ResponseWriter, request *http.Request, title string
 var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
 
 func renderTemplate(writer http.ResponseWriter, tmpl string, page *Page) {
-	tmpl = "tmpl/" + tmpl + ".html"
-	fmt.Println("Page title::" + page.Title)
+	tmpl = tmpl + ".html"
 	err := templates.ExecuteTemplate(writer, tmpl, page)
 	if err != nil {
-		fmt.Println("Couldn't render template: " + tmpl + ". " + err.Error())
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -83,7 +78,6 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 	return func(writer http.ResponseWriter, request *http.Request) {
 		match := validPath.FindStringSubmatch(request.URL.Path)
 		if match == nil {
-			fmt.Println("Not valid path");
 			http.NotFound(writer, request)
 			return
 		}
