@@ -21,12 +21,12 @@ type Page struct {
 }
 
 func (page *Page) save() error {
-	filename := page.Title + ".txt"
+	filename := "pages/"+page.Title+".txt"
 	return ioutil.WriteFile(filename, page.Body, 0600)
 }
 
 func loadPage(title string) (*Page, error) {
-	filename := title + ".txt"
+	filename := "pages/"+title+".txt"
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
