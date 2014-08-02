@@ -8,7 +8,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
-//	"fmt"
+	//"fmt"
 )
 
 var (
@@ -37,7 +37,7 @@ func loadPage(title string) (*Page, error) {
 func viewHandler(writer http.ResponseWriter, request *http.Request, title string) {
 	page, err := loadPage(title)
 	if err != nil {
-		http.Redirect(writer, request, "/edit/" + title, http.StatusFound)
+		http.Redirect(writer, request, "/edit/"+title, http.StatusFound)
 		return
 	}
 	renderTemplate(writer, "view", page)
@@ -59,13 +59,13 @@ func saveHandler(writer http.ResponseWriter, request *http.Request, title string
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(writer, request, "/view/" + title, http.StatusFound)
+	http.Redirect(writer, request, "/view/"+title, http.StatusFound)
 }
 
 var templates = template.Must(template.ParseFiles("tmpl/edit.html", "tmpl/view.html"))
 
 func renderTemplate(writer http.ResponseWriter, tmpl string, page *Page) {
-	err := templates.ExecuteTemplate(writer, tmpl + ".html", page)
+	err := templates.ExecuteTemplate(writer, tmpl+".html", page)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
